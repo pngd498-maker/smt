@@ -1,0 +1,209 @@
+<!DOCTYPE html><html><head><title>VEMU Attendance</title><script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><style>
+
+body{
+font-family:Arial;
+background:linear-gradient(135deg,#020617,#1e293b);
+color:white;
+text-align:center;
+margin:0;
+}
+
+header{
+background:#0284c7;
+padding:25px;
+font-size:30px;
+letter-spacing:2px;
+}
+
+.container{
+width:90%;
+margin:auto;
+margin-top:30px;
+}
+
+.card{
+background:#1e293b;
+padding:20px;
+border-radius:10px;
+margin-bottom:20px;
+}
+
+.counter{
+font-size:50px;
+color:#22c55e;
+}
+
+button{
+background:#22c55e;
+border:none;
+padding:10px 15px;
+color:white;
+font-size:16px;
+border-radius:5px;
+cursor:pointer;
+margin-top:15px;
+}
+
+table{
+width:100%;
+margin-top:20px;
+border-collapse:collapse;
+}
+
+th{
+background:#0284c7;
+padding:12px;
+}
+
+td{
+padding:12px;
+border-bottom:1px solid #334155;
+}
+
+.present{color:#22c55e;}
+.late{color:#ef4444;}
+.permitted{color:#f59e0b;}
+
+.student{
+background:#334155;
+padding:10px;
+margin:5px;
+cursor:pointer;
+border-radius:5px;
+}
+
+</style></head><body><header>
+VEMU INSTITUTION OF TECHNOLOGY <br>
+Attendance System ECE-B
+</header><div class="container"><div class="card">
+<h2>Total Present</h2>
+<div id="counter" class="counter">0</div>
+</div><div class="card">
+<h2>Attendance Graph</h2>
+<canvas id="chart"></canvas>
+</div><button onclick="showStudents()">HOD Permission</button>
+
+<div id="students"></div><div class="card"><h2>Live Attendance</h2><table><tr>
+<th>Name</th>
+<th>Date</th>
+<th>Time</th>
+<th>Status</th>
+</tr><tbody id="table"></tbody></table></div></div><script>
+
+// Firebase configuration
+
+var firebaseConfig = {
+  apiKey: "AIzaSyCb7UzdADQOI9Fau9yUMt0NJd3aTrra-8U",
+  authDomain: "smart-attendance-a2f4d.firebaseapp.com",
+  databaseURL: "https://smart-attendance-a2f4d-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "smart-attendance-a2f4d",
+  storageBucket: "smart-attendance-a2f4d.firebasestorage.app",
+  messagingSenderId: "234779453587",
+  appId: "1:234779453587:web:bc1822a4c9732c84f98566"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+var db = firebase.database();
+
+var table=document.getElementById("table");
+var counter=document.getElementById("counter");
+
+var present=0;
+var late=0;
+
+var ctx=document.getElementById("chart");
+
+var chart=new Chart(ctx,{
+type:'bar',
+data:{
+labels:['Present','Late'],
+datasets:[{
+label:'Attendance',
+data:[0,0],
+backgroundColor:['#22c55e','#ef4444']
+}]
+}
+});
+
+// Load attendance data
+
+db.ref("attendance").on("child_added",function(snapshot){
+
+var data=snapshot.val();
+
+var row=document.createElement("tr");
+
+var cls="present";
+
+if(data.status=="Late") cls="late";
+if(data.status=="Permitted") cls="permitted";
+
+row.innerHTML=
+"<td>"+data.name+"</td>"+
+"<td>"+data.date+"</td>"+
+"<td>"+data.time+"</td>"+
+"<td class='"+cls+"'>"+data.status+"</td>";
+
+table.appendChild(row);
+
+if(data.status=="Present") present++;
+if(data.status=="Late") late++;
+
+counter.innerText=present;
+
+chart.data.datasets[0].data=[present,late];
+chart.update();
+
+});
+
+// HOD permission list
+
+function showStudents(){
+
+var div=document.getElementById("students");
+
+div.innerHTML="";
+
+db.ref("students").once("value",function(snapshot){
+
+snapshot.forEach(function(child){
+
+var name=child.val().name;
+
+var s=document.createElement("div");
+
+s.className="student";
+s.innerText=name;
+
+s.onclick=function(){permit(name)};
+
+div.appendChild(s);
+
+});
+
+});
+
+}
+
+function permit(name){
+
+var now=new Date();
+
+var date=now.toISOString().slice(0,10);
+var time=now.toTimeString().slice(0,8);
+
+db.ref("attendance").push({
+
+name:name,
+date:date,
+time:time,
+status:"Permitted"
+
+});
+
+alert(name+" permitted");
+
+}
+
+</script></body></html>
