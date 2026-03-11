@@ -1,52 +1,47 @@
-<!DOCTYPE html><html><head><title>VEMU Attendance</title><script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script><script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script><script src="https://cdn.jsdelivr.net/npm/chart.js"></script><style>
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>VEMU Smart Attendance</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
 
 body{
 font-family:Arial;
-background:linear-gradient(135deg,#020617,#1e293b);
+background:linear-gradient(135deg,#0f172a,#1e3a8a);
 color:white;
 text-align:center;
-margin:0;
 }
 
 header{
 background:#0284c7;
 padding:25px;
-font-size:30px;
-letter-spacing:2px;
-}
-
-.container{
-width:90%;
-margin:auto;
-margin-top:30px;
+font-size:28px;
 }
 
 .card{
+display:inline-block;
 background:#1e293b;
 padding:20px;
+margin:10px;
 border-radius:10px;
-margin-bottom:20px;
-}
-
-.counter{
-font-size:50px;
-color:#22c55e;
 }
 
 button{
+padding:10px 20px;
 background:#22c55e;
 border:none;
-padding:10px 15px;
 color:white;
-font-size:16px;
-border-radius:5px;
 cursor:pointer;
-margin-top:15px;
 }
 
 table{
-width:100%;
-margin-top:20px;
+width:80%;
+margin:auto;
 border-collapse:collapse;
 }
 
@@ -56,154 +51,180 @@ padding:12px;
 }
 
 td{
-padding:12px;
-border-bottom:1px solid #334155;
+padding:10px;
+border-bottom:1px solid gray;
 }
-
-.present{color:#22c55e;}
-.late{color:#ef4444;}
-.permitted{color:#f59e0b;}
 
 .student{
 background:#334155;
 padding:10px;
 margin:5px;
 cursor:pointer;
-border-radius:5px;
 }
 
-</style></head><body><header>
-VEMU INSTITUTION OF TECHNOLOGY <br>
-Attendance System ECE-B
-</header><div class="container"><div class="card">
-<h2>Total Present</h2>
-<div id="counter" class="counter">0</div>
-</div><div class="card">
-<h2>Attendance Graph</h2>
-<canvas id="chart"></canvas>
-</div><button onclick="showStudents()">HOD Permission</button>
+</style>
 
-<div id="students"></div><div class="card"><h2>Live Attendance</h2><table><tr>
+</head>
+
+<body>
+
+<header>
+
+VEMU INSTITUTION OF TECHNOLOGY
+SMART ATTENDANCE SYSTEM ECE-B
+
+</header>
+
+<div class="card">
+
+<h2>Present</h2>
+<h1 id="present">0</h1>
+
+</div>
+
+<div class="card">
+
+<h2>Late</h2>
+<h1 id="late">0</h1>
+
+</div>
+
+<canvas id="chart"></canvas>
+
+<br><br>
+
+<button onclick="login()">HOD Permission</button>
+
+<div id="students"></div>
+
+<table>
+
+<tr>
 <th>Name</th>
-<th>Date</th>
 <th>Time</th>
 <th>Status</th>
-</tr><tbody id="table"></tbody></table></div></div><script>
+</tr>
 
-// Firebase configuration
+<tbody id="table"></tbody>
 
-var firebaseConfig = {
-  apiKey: "AIzaSyCb7UzdADQOI9Fau9yUMt0NJd3aTrra-8U",
-  authDomain: "smart-attendance-a2f4d.firebaseapp.com",
-  databaseURL: "https://smart-attendance-a2f4d-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "smart-attendance-a2f4d",
-  storageBucket: "smart-attendance-a2f4d.firebasestorage.app",
-  messagingSenderId: "234779453587",
-  appId: "1:234779453587:web:bc1822a4c9732c84f98566"
-};
+</table>
 
-firebase.initializeApp(firebaseConfig);
+<script>
 
-var db = firebase.database();
+const firebaseConfig={
+databaseURL:"https://st-as-a53b9-default-rtdb.asia-southeast1.firebasedatabase.app"
+}
 
-var table=document.getElementById("table");
-var counter=document.getElementById("counter");
+firebase.initializeApp(firebaseConfig)
 
-var present=0;
-var late=0;
+const db=firebase.database()
 
-var ctx=document.getElementById("chart");
+let present=0
+let late=0
 
-var chart=new Chart(ctx,{
+const chart=new Chart(document.getElementById("chart"),{
+
 type:'bar',
+
 data:{
 labels:['Present','Late'],
 datasets:[{
-label:'Attendance',
 data:[0,0],
-backgroundColor:['#22c55e','#ef4444']
+backgroundColor:['green','red']
 }]
 }
-});
 
-// Load attendance data
+})
 
-db.ref("attendance").on("child_added",function(snapshot){
+db.ref("attendance").on("child_added",(snap)=>{
 
-var data=snapshot.val();
+let data=snap.val()
 
-var row=document.createElement("tr");
+let row=document.createElement("tr")
 
-var cls="present";
+row.innerHTML=`
+<td>${data.name}</td>
+<td>${data.time}</td>
+<td>${data.status}</td>
+`
 
-if(data.status=="Late") cls="late";
-if(data.status=="Permitted") cls="permitted";
+document.getElementById("table").appendChild(row)
 
-row.innerHTML=
-"<td>"+data.name+"</td>"+
-"<td>"+data.date+"</td>"+
-"<td>"+data.time+"</td>"+
-"<td class='"+cls+"'>"+data.status+"</td>";
+if(data.status=="Present")present++
+if(data.status=="Late")late++
 
-table.appendChild(row);
+document.getElementById("present").innerText=present
+document.getElementById("late").innerText=late
 
-if(data.status=="Present") present++;
-if(data.status=="Late") late++;
+chart.data.datasets[0].data=[present,late]
+chart.update()
 
-counter.innerText=present;
+})
 
-chart.data.datasets[0].data=[present,late];
-chart.update();
+function login(){
 
-});
+let id=prompt("Enter HOD ID")
+let pass=prompt("Enter Password")
 
-// HOD permission list
+if(id=="Png_is_hod" && pass=="9014381494"){
 
-function showStudents(){
+loadStudents()
 
-var div=document.getElementById("students");
+}else{
 
-div.innerHTML="";
+alert("Invalid Login")
 
-db.ref("students").once("value",function(snapshot){
+}
 
-snapshot.forEach(function(child){
+}
 
-var name=child.val().name;
+function loadStudents(){
 
-var s=document.createElement("div");
+let div=document.getElementById("students")
 
-s.className="student";
-s.innerText=name;
+div.innerHTML=""
 
-s.onclick=function(){permit(name)};
+db.ref("students").once("value",(snap)=>{
 
-div.appendChild(s);
+snap.forEach((child)=>{
 
-});
+let name=child.val().name
 
-});
+let s=document.createElement("div")
+
+s.className="student"
+
+s.innerText=name
+
+s.onclick=function(){permit(name)}
+
+div.appendChild(s)
+
+})
+
+})
 
 }
 
 function permit(name){
 
-var now=new Date();
+let now=new Date()
 
-var date=now.toISOString().slice(0,10);
-var time=now.toTimeString().slice(0,8);
+let time=now.toLocaleTimeString()
 
 db.ref("attendance").push({
 
 name:name,
-date:date,
 time:time,
 status:"Permitted"
 
-});
+})
 
-alert(name+" permitted");
+alert(name+" Permitted")
 
 }
 
-</script></body></html>
+</script>
+
+</body>
+</html>
